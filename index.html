@@ -1,0 +1,157 @@
+<!doctype html>
+<html>
+   <body>
+      <canvas width = "570" height = "570" id = "my_Canvas"></canvas>
+
+      <script>
+         /*================Creating a canvas=================*/
+        var canvas = document.getElementById('my_Canvas');
+        gl = canvas.getContext('experimental-webgl'); 
+		
+		/*==========Defining and storing the geometry=======*/
+
+		var squareVertices = [
+			
+			-0.5,0.5,0.0,
+			-0.5,0.2,0.0,
+			
+			-0.5,0.5,0.0,
+			-0.3,0.5,0.0,
+			
+			-0.3,0.5,0.0,
+			-0.3,0.2,0.0,
+			
+			-0.5,0.2,0.0,
+			-0.3,0.2,0.0,
+        ];
+		
+		//take lower left point to the origin
+		var transMat = new Float32Array([
+				1.0,	0.0,  	0.0,	0.5, 
+				0.0,	1.0,  	0.0, 	-0.2,
+				0.0,	0.0,  	1.0, 	0.0,
+				0.0,  	0.0,	0.0, 	1.0
+			]);
+		//inverse transformation
+		var transInvMat = new Float32Array([
+				1.0,	0.0,  	0.0,	-0.5, 
+				0.0,	1.0,  	0.0, 	0.2,
+				0.0,	0.0,  	1.0, 	0.0,
+				0.0,  	0.0,	0.0, 	1.0
+		]);	
+		
+		
+		
+        //vertex shader Code
+        var vertCode =
+			'precision mediump float;'+
+			'attribute vec4 coordinates;'+
+			'uniform float mouse_click;'+
+			'uniform float radian_angle;'+
+			'uniform mat4 u_transformation;'+
+			'uniform mat4 u_transformationI;'+
+			'mat4 u_rotaion=mat4('+
+                'cos(radian_angle), sin(radian_angle),  0.0,     0.0,'+
+				'-sin(radian_angle),cos(radian_angle),  0.0,     0.0,'+
+				'0.0,             	0.0,		        1.0,     0.0,'+
+				'0.0,             	0.0,        		0.0,    1.0);'+
+			'void main(void) {'+
+				'if (mouse_click == 1.0) gl_Position = coordinates * (u_transformation * u_rotaion * u_transformationI);'+
+				'else gl_Position = coordinates;'+
+				'gl_PointSize = 1.0;'+
+			'}';
+        // Create a vertex shader object
+		var vertShader = gl.createShader(gl.VERTEX_SHADER);
+         
+		// Attach vertex shader source code
+		gl.shaderSource(vertShader, vertCode);
+
+		// Compile the vertex shader
+		gl.compileShader(vertShader);
+	
+        // fragment shader source code
+		var fragCode =
+			'precision mediump float;'+
+			'void main(void) { '+
+			'gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);'+ 
+             '}';
+        // Create fragment shader object
+         var fragShader = gl.createShader(gl.FRAGMENT_SHADER);
+
+         // Attach fragment shader source code
+         gl.shaderSource(fragShader, fragCode);
+
+         // Compile the fragmentt shader
+         gl.compileShader(fragShader);
+ 
+        // Create a shader program object to store
+         // the combined shader program
+         var shaderProgram = gl.createProgram();
+
+         // Attach a vertex shader
+         gl.attachShader(shaderProgram, vertShader); 
+
+         // Attach a fragment shader
+         gl.attachShader(shaderProgram, fragShader);
+
+         // Link both programs
+         gl.linkProgram(shaderProgram);
+
+         // Use the combined shader program object
+         gl.useProgram(shaderProgram);
+
+		function drawLines(type, vertices) {
+			var vertex_buffer = gl.createBuffer();
+			gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
+			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+			var coord = gl.getAttribLocation(shaderProgram, "coordinates");
+			gl.vertexAttribPointer(coord, 3, gl.FLOAT, false, 0, 0);
+			gl.enableVertexAttribArray(coord);
+			var n = vertices.length / 3;
+			gl.drawArrays(type, 0, n);
+		}
+		
+		var mouse_click = gl.getUniformLocation(shaderProgram, "mouse_click");
+		var angle = gl.getUniformLocation(shaderProgram, "radian_angle");
+		var transform = gl.getUniformLocation(shaderProgram, "u_transformation");
+		var inverseTransform = gl.getUniformLocation(shaderProgram, "u_transformationI");
+		var angleDegree = 0;
+		canvas.onmousedown = function (ev) { click(ev, gl, canvas,click ,angle,transform,inverseTransform ); };
+		function click(ev, gl, canvas,click, angle,transform,inverseTransform ){   
+			angleDegree += 5;
+			var angleRadian = (angleDegree * Math.PI) / 180;
+			gl.uniform1f(mouse_click,1.0);
+			gl.uniform1f(angle,angleRadian);
+			
+			gl.uniformMatrix4fv(transform, false, transMat);
+			gl.uniformMatrix4fv(inverseTransform, false, transInvMat);
+			// Clear the canvas
+			gl.clearColor(0.5, 0.5, 0.5, 0.9);
+			// Enable the depth test
+			gl.enable(gl.DEPTH_TEST);
+			// Clear the color buffer bit
+			gl.clear(gl.COLOR_BUFFER_BIT);
+			// Set the view port
+			gl.viewport(0,0,canvas.width,canvas.height);
+			drawLines(gl.LINES,squareVertices);
+                        
+		}
+ 
+		// Clear the canvas
+        gl.clearColor(0.5, 0.5, 0.5, 0.9);
+
+        // Enable the depth test
+        gl.enable(gl.DEPTH_TEST);
+ 
+        // Clear the color buffer bit
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
+        // Set the view port
+        gl.viewport(0,0,canvas.width,canvas.height);
+			 
+		drawLines(gl.LINES,squareVertices);
+ 
+ 
+     </script>
+   </body>
+</html>
